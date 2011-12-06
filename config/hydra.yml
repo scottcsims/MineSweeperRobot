@@ -1,0 +1,6 @@
+workers:
+        - type: local
+          runners: 6
+
+verbose: false
+runner_log_file: log/hydra.log
