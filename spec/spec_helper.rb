@@ -1,7 +1,7 @@
 require 'rubygems'
 require 'bundler/setup'
 require 'automata'
-
+require File.dirname(__FILE__) + "/../lib/mine_sweeper"
 RSpec.configure do |config|
    config.before(:each) do
     Log.debug "Example Group: #{example.example_group.description}"
