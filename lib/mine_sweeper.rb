@@ -20,6 +20,7 @@ class MineSweeper <PageObject
   end
 
   def click_block id
+    check_alive
     block = driver.find_element(:id => id)
     block.click
     number_of_mines = block.attribute("class").gsub!("mines", "").to_i
@@ -31,5 +32,16 @@ class MineSweeper <PageObject
     block = driver.find_element(:id => id)
     driver.action.context_click(block).perform
   end
-
+  def clicked_blocks
+    driver.find_elements :css => "td unclicked"
+  end
+  def status
+    driver.find_element(:id => "g1indicator").attribute("class").gsub("status","").strip
+  end
+  def check_alive
+    raise "not alive" unless status == "alive"
+  end
+  def ones
+    driver.find_elements(:class=>"mines1")
+  end
 end
