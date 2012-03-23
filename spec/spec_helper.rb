@@ -3,7 +3,6 @@ require 'bundler/setup'
 require 'automata'
 require File.dirname(__FILE__) + "/../lib/mine_sweeper"
 require File.dirname(__FILE__) + "/../lib/coordinates"
-require File.dirname(__FILE__) + "/../lib/block_calculator"
 RSpec.configure do |config|
    config.before(:each) do
     Log.debug "Example Group: #{example.example_group.description}"

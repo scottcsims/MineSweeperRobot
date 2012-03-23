@@ -1,7 +1,9 @@
 require 'spec_helper'
 describe MineSweeper do
   before(:each) do
-    launch_web_driver "file://localhost/Users/ssims/RubymineProjects/minesweeper.github.com/index.html?preset=beginner"
+    #launch_web_driver "file://localhost/Users/ssims/RubymineProjects/minesweeper.github.com/index.html"
+    #http://minesweeper.github.com/?rows=3&cols=4&mines=[[0,0],[0,1],[0,2]]
+    launch_web_driver "http://minesweeper.github.com/?preset=expert"
   end
   let(:mine_sweeper) { MineSweeper.new(driver) }
   let(:center_coords) { "g1r5c5" }
@@ -60,20 +62,37 @@ describe MineSweeper do
     ones[0].attribute("id").should(include("r"))
     ones[0].attribute("id").should(include("c"))
   end
-  it "should find a 1 touching one unclicked block" do
+  it "should find a 1 touching one unclicked block " do
     mine_sweeper.click_block("g1r0c0")
     mine_sweeper.click_block("g1r8c0")
     mine_sweeper.click_block("g1r0c8")
     mine_sweeper.click_block("g1r8c8")
     mine_sweeper.mark_ones.should_not be_nil
   end
-  it "should find 1 touching marked" do
-    mine_sweeper.click_block("g1r0c0")
-    mine_sweeper.click_block("g1r8c0")
-    mine_sweeper.click_block("g1r0c8")
-    mine_sweeper.click_block("g1r8c8")
-    mine_sweeper.mark_ones.should_not be_nil
-    mine_sweeper.expand_around_marked.should == "won"
-  end
+  it "should win" do
+    wins=0
+    trys=0
+    while wins < 100
+      puts "Wins:#{wins} out of #{trys} trys"
+      mine_sweeper.click_top_left_cell
+      mine_sweeper.click_top_right_cell
+      mine_sweeper.click_bottom_left_cell
+      mine_sweeper.click_bottom_right_cell
+      if mine_sweeper.status == "alive"
+        4.times do
+          mine_sweeper.random_click
+        end
+      end
+      result = mine_sweeper.expand_around_marked
+      if result == "won"
+        wins =wins+1
+        time_to_win=driver.find_element(:css => "div.timer").attribute("title")
+        Log.info "Won in #{time_to_win} seconds"
+      end
+      trys=trys+1 #unless mine_sweeper.status == "dead"
+      driver.find_element(:class => "status").click
+      mine_sweeper=MineSweeper.new(driver)
 
+    end
+  end
 end
