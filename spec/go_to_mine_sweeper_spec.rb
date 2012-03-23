@@ -1,10 +1,10 @@
 require 'spec_helper'
 describe MineSweeper do
-  before(:each)do
+  before(:each) do
     launch_web_driver "file://localhost/Users/ssims/RubymineProjects/minesweeper.github.com/index.html?preset=beginner"
   end
-  let(:mine_sweeper){MineSweeper.new(driver)}
-  let(:center_coords){"g1r5c5"}
+  let(:mine_sweeper) { MineSweeper.new(driver) }
+  let(:center_coords) { "g1r5c5" }
   #Classes
   #unclicked
   #mines #
@@ -61,6 +61,19 @@ describe MineSweeper do
     ones[0].attribute("id").should(include("c"))
   end
   it "should find a 1 touching one unclicked block" do
-    mine_sweeper
+    mine_sweeper.click_block("g1r0c0")
+    mine_sweeper.click_block("g1r8c0")
+    mine_sweeper.click_block("g1r0c8")
+    mine_sweeper.click_block("g1r8c8")
+    mine_sweeper.mark_ones.should_not be_nil
   end
+  it "should find 1 touching marked" do
+    mine_sweeper.click_block("g1r0c0")
+    mine_sweeper.click_block("g1r8c0")
+    mine_sweeper.click_block("g1r0c8")
+    mine_sweeper.click_block("g1r8c8")
+    mine_sweeper.mark_ones.should_not be_nil
+    mine_sweeper.expand_around_marked.should == "won"
+  end
+
 end
