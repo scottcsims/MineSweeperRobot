@@ -1,9 +1,9 @@
 require 'spec_helper'
 describe MineSweeper do
   before(:each) do
-    #launch_web_driver "file://localhost/Users/ssims/RubymineProjects/minesweeper.github.com/index.html"
-    #http://minesweeper.github.com/?rows=3&cols=4&mines=[[0,0],[0,1],[0,2]]
-    launch_web_driver "http://minesweeper.github.com/?preset=expert"
+    launch_web_driver "file://localhost/Users/ssims/RubymineProjects/minesweeper.github.com/index.html?preset=beginner"
+    #http://minesweeper.github.com/?rows=3&cols=4&mines=[[0,0],[0,1],[0,2]] intermediate
+    #launch_web_driver "http://minesweeper.github.com/?preset=expert"
   end
   let(:mine_sweeper) { MineSweeper.new(driver) }
   let(:center_coords) { "g1r5c5" }
@@ -13,6 +13,19 @@ describe MineSweeper do
   #marked
   #id is location and class attribute is state
   #columns and rows start at 0
+  it "should get the table source" do
+    mine_sweeper.source.should_not be_nil
+  end
+
+  it "should get ones" do
+    driver.navigate.to "file://localhost/Users/ssims/RubymineProjects/minesweeper.github.com/index.html?rows=3&cols=4&mines=[[0,0],[0,1],[0,2]]"
+    mine_sweeper=MineSweeper.new(driver)
+    mine_sweeper.click_block("g1r2c0")
+    mine_sweeper.source=driver.page_source
+    ones=mine_sweeper.nokogiri_elements(".mines1")
+    ones.should have(1).element
+    ones[0].get_attribute("id").should == "g1r1c3"
+  end
   it "should find the rows and columns" do
     mine_sweeper.rows.should == 9
     mine_sweeper.columns.should == 9
@@ -71,25 +84,26 @@ describe MineSweeper do
   end
   it "should win" do
     wins=0
-    trys=0
+    tries=0
     while wins < 100
-      puts "Wins:#{wins} out of #{trys} trys"
+      puts "Wins:#{wins} out of #{tries} tries"
       mine_sweeper.click_top_left_cell
       mine_sweeper.click_top_right_cell
       mine_sweeper.click_bottom_left_cell
       mine_sweeper.click_bottom_right_cell
-      if mine_sweeper.status == "alive"
-        4.times do
-          mine_sweeper.random_click
-        end
-      end
+      #mine_sweeper.click_block "g1r8c14"
+      #if mine_sweeper.status == "alive"
+      #  4.times do
+      #    mine_sweeper.random_click
+      #  end
+      #end
       result = mine_sweeper.expand_around_marked
       if result == "won"
         wins =wins+1
         time_to_win=driver.find_element(:css => "div.timer").attribute("title")
         Log.info "Won in #{time_to_win} seconds"
       end
-      trys=trys+1 #unless mine_sweeper.status == "dead"
+      tries=tries+1 #unless mine_sweeper.status == "dead"
       driver.find_element(:class => "status").click
       mine_sweeper=MineSweeper.new(driver)
 

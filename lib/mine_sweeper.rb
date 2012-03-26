@@ -7,10 +7,11 @@ class MineSweeper <PageObject
     @mines ={}
     @marked_inspections = 0
     @all_clicked_around =[]
+    @source = driver.page_source
   end
 
   attr_reader :columns, :mines, :marked_inspections, :all_clicked_around
-
+  attr_accessor :source
   element :center, {:id => "g1r8c15"}
 
   def rows
@@ -19,6 +20,15 @@ class MineSweeper <PageObject
 
   def cells
     @cells= driver.find_elements(:css => "td").length
+  end
+
+  def nokogiri_elements selector
+    nokogiri_elements=[]
+    doc = Nokogiri::HTML(source)
+    doc.css(selector).each do |nokogiri_element|
+      nokogiri_elements.push(nokogiri_element)
+    end
+    return nokogiri_elements
   end
 
   def click_top_left_cell
@@ -73,24 +83,28 @@ class MineSweeper <PageObject
   end
 
   def ones
-    driver.find_elements(:class => "mines1")
+    nokogiri_elements(".mines1")
   end
 
   def twos
-    driver.find_elements(:class => "mines2")
+    nokogiri_elements(".mines2")
   end
 
   def threes
-    driver.find_elements(:class => "mines3")
+    nokogiri_elements(".mines3")
   end
 
   def fours
-    driver.find_elements(:class => "mines4")
+    nokogiri_elements(".mines4")
+  end
+
+  def fives
+    nokogiri_elements(".mines5")
   end
 
 
   def marked
-    driver.find_elements(:class => "marked")
+    nokogiri_elements(".marked")
   end
 
   def out_of_bounds coord
@@ -100,10 +114,11 @@ class MineSweeper <PageObject
   def mark_ones
     found=0
     Log.info "Marking ones"
+
     ones.each do |one|
       unclicked_blocks=[]
       marked_blocks=[]
-      coordinates=Coordinates.new(one.attribute("id"))
+      coordinates=Coordinates.new(one.get_attribute("id"))
       coordinates.surrounding.each_value do |value|
         #Check Surrounding blocks and if one is unclicked mark it
         next if out_of_bounds value
@@ -130,10 +145,10 @@ class MineSweeper <PageObject
   def mark_twos
     found=0
     Log.info "Marking twos"
-    twos.each do |one|
+    twos.each do |two|
       unclicked_blocks=[]
       marked_blocks=[]
-      coordinates=Coordinates.new(one.attribute("id"))
+      coordinates=Coordinates.new(two.get_attribute("id"))
       coordinates.surrounding.each_value do |value|
         #Check Surrounding blocks and if one is unclicked mark it
         next if out_of_bounds value
@@ -162,7 +177,7 @@ class MineSweeper <PageObject
     threes.each do |three|
       unclicked_blocks=[]
       marked_blocks=[]
-      coordinates=Coordinates.new(three.attribute("id"))
+      coordinates=Coordinates.new(three.get_attribute("id"))
       coordinates.surrounding.each_value do |value|
         #Check Surrounding blocks and if one is unclicked mark it
         next if out_of_bounds value
@@ -198,7 +213,7 @@ class MineSweeper <PageObject
     fours.each do |four|
       unclicked_blocks=[]
       marked_blocks=[]
-      coordinates=Coordinates.new(four.attribute("id"))
+      coordinates=Coordinates.new(four.get_attribute("id"))
       coordinates.surrounding.each_value do |value|
         #Check Surrounding blocks and if one is unclicked mark it
         next if out_of_bounds value
@@ -331,7 +346,7 @@ class MineSweeper <PageObject
       found_threes=[]
       found_fours=[]
       found_unclicked=[]
-      surrounding_blocks=Coordinates.new(mark.attribute("id")).surrounding
+      surrounding_blocks=Coordinates.new(mark.get_attribute("id")).surrounding
       surrounding_blocks.each_value do |value|
         next if all_clicked_around.include?(value)
         next if out_of_bounds value
@@ -381,6 +396,7 @@ class MineSweeper <PageObject
       Log.info "Marked #{marked.length - marked_inspections} this round"
       #should random click by a one
       random_click if marked.length == marked_inspections
+      @source=driver.page_source
       expand_around_marked
     end
     return status
