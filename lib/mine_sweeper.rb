@@ -8,18 +8,24 @@ class MineSweeper <PageObject
     @marked_inspections = 0
     @all_clicked_around =[]
     @source = driver.page_source
+    @types_to_int={"ones" => 1,
+                   "twos" => 2,
+                   "threes" => 3,
+                   "fours" => 4,
+                   "fives" => 5,
+    }
   end
 
-  attr_reader :columns, :mines, :marked_inspections, :all_clicked_around
+  attr_reader :columns, :mines, :marked_inspections, :all_clicked_around, :types_to_int
   attr_accessor :source
-  element :center, {:id => "g1r8c15"}
+  element :center, {:id => " g1r8c15 "}
 
   def rows
-    @rows =driver.find_elements(:css => "tr").length
+    @rows =driver.find_elements(:css => " tr ").length
   end
 
   def cells
-    @cells= driver.find_elements(:css => "td").length
+    @cells= driver.find_elements(:css => " td ").length
   end
 
   def nokogiri_elements selector
@@ -111,288 +117,101 @@ class MineSweeper <PageObject
     coord.include?("-") || coord.include?("c#{columns}") || coord.include?("r#{rows}")
   end
 
-  def mark_ones
-    found=0
-    Log.info "Marking ones"
-
-    ones.each do |one|
-      unclicked_blocks=[]
-      marked_blocks=[]
-      coordinates=Coordinates.new(one.get_attribute("id"))
-      coordinates.surrounding.each_value do |value|
-        #Check Surrounding blocks and if one is unclicked mark it
-        next if out_of_bounds value
-
-        block=driver.find_element(:id => value)
-
-        if block.attribute("class")=="unclicked"
-          unclicked_blocks.push(value)
-        end
-        if block.attribute("class")=="marked"
-          marked_blocks.push(value)
-        end
+  def surrounding_type(type, coordinates)
+    found_blocks=[]
+    Coordinates.new(coordinates).surrounding.each_value do |location|
+      next if out_of_bounds location
+      location_class = nokogiri_elements("td[id='#{location}']")[0].get_attribute("class")
+      if location_class == type
+        found_blocks.push(location)
       end
-      if (unclicked_blocks.length == 1 && marked_blocks.length == 0)
-        mark_block unclicked_blocks[0]
-        found=found+1
+    end
+    return found_blocks
+  end
+
+  def mark(type)
+    found=0
+    Log.info "Marking #{type}"
+    @source=driver.page_source
+    blocks_to_mark=[]
+    send(type).each do |selection|
+      selection_coords=selection.get_attribute("id")
+      unclicked_blocks=surrounding_type("unclicked", selection_coords)
+      marked_blocks=surrounding_type("marked", selection_coords)
+      allowed_marked=types_to_int[type]-1
+      if (unclicked_blocks.length == 1 && marked_blocks.length == allowed_marked)
+        blocks_to_mark.push(unclicked_blocks[0])
+      end
+      if ((unclicked_blocks.length + marked_blocks.length) == types_to_int[type])
+        blocks_to_mark.push(unclicked_blocks[0])
       end
 
     end
-    Log.info "Marked #{found}"
+    unless blocks_to_mark.uniq.empty?
+      blocks_to_mark.uniq.each do |block|
+        unless block.nil?
+          mark_block(block)
+          found=found+1
+
+        end
+      end
+      Log.info "Marked #{found}"
+      found
+    end
+  end
+
+  def click_around selection_coords, type
+    found=0
+    #Log.info "Clicking Around #{selection_coords}"
+    @source=driver.page_source
+    blocks_to_click=[]
+    unclicked_blocks=surrounding_type("unclicked", selection_coords)
+    marked_blocks=surrounding_type("marked", selection_coords)
+    if (unclicked_blocks.length > 0 && marked_blocks.length == types_to_int[type])
+      blocks_to_click.push(unclicked_blocks[0])
+    end
+    unless blocks_to_click.uniq.empty?
+      blocks_to_click.uniq.each do |block|
+        unless block.nil?
+          click_block(block)
+          found=found+1
+        end
+      end
+    end
     found
   end
-
-  def mark_twos
-    found=0
-    Log.info "Marking twos"
-    twos.each do |two|
-      unclicked_blocks=[]
-      marked_blocks=[]
-      coordinates=Coordinates.new(two.get_attribute("id"))
-      coordinates.surrounding.each_value do |value|
-        #Check Surrounding blocks and if one is unclicked mark it
-        next if out_of_bounds value
-
-        block=driver.find_element(:id => value)
-
-        if block.attribute("class")=="unclicked"
-          unclicked_blocks.push(value)
-        end
-        if block.attribute("class")=="marked"
-          marked_blocks.push(value)
-        end
-      end
-      if (unclicked_blocks.length == 1 && marked_blocks.length == 1)
-        mark_block unclicked_blocks[0]
-        found=found + 1
-      end
-    end
-    Log.info "Marked #{found}"
-    found
-  end
-
-  def mark_threes
-    found=0
-    Log.info "Marking threes"
-    threes.each do |three|
-      unclicked_blocks=[]
-      marked_blocks=[]
-      coordinates=Coordinates.new(three.get_attribute("id"))
-      coordinates.surrounding.each_value do |value|
-        #Check Surrounding blocks and if one is unclicked mark it
-        next if out_of_bounds value
-
-        block=driver.find_element(:id => value)
-
-        if block.attribute("class")=="unclicked"
-          unclicked_blocks.push(value)
-        end
-        if block.attribute("class")=="marked"
-          marked_blocks.push(value)
-        end
-      end
-      if (unclicked_blocks.length == 1 && marked_blocks.length == 2)
-        mark_block unclicked_blocks[0]
-        unclicked_blocks.pop
-        found=found + 1
-      end
-      if ((unclicked_blocks.length + marked_blocks.length) == 3)
-        found=found+unclicked_blocks.length
-        unclicked_blocks.each do |block_id|
-          mark_block(block_id)
-        end
-      end
-    end
-    Log.info "Marked #{found}"
-    found
-  end
-
-  def mark_fours
-    found=0
-    Log.info "Marking fours"
-    fours.each do |four|
-      unclicked_blocks=[]
-      marked_blocks=[]
-      coordinates=Coordinates.new(four.get_attribute("id"))
-      coordinates.surrounding.each_value do |value|
-        #Check Surrounding blocks and if one is unclicked mark it
-        next if out_of_bounds value
-
-        block=driver.find_element(:id => value)
-
-        if block.attribute("class")=="unclicked"
-          unclicked_blocks.push(value)
-        end
-        if block.attribute("class")=="marked"
-          marked_blocks.push(value)
-        end
-      end
-      if (unclicked_blocks.length == 1 && marked_blocks.length == 3)
-        mark_block unclicked_blocks[0]
-        unclicked_blocks.pop
-        found=found + 1
-      end
-      if ((unclicked_blocks.length + marked_blocks.length) == 4)
-        found=found+unclicked_blocks.length
-        unclicked_blocks.each do |block_id|
-          mark_block(block_id)
-        end
-      end
-    end
-    Log.info "Marked #{found}"
-    found
-  end
-
-
-  def click_around_one one
-    Log.debug "Clicking around ones"
-    unclicked_blocks=[]
-    marked_blocks=[]
-    surrounding_blocks=Coordinates.new(one).surrounding
-    surrounding_blocks.each_value do |value|
-      next if out_of_bounds value
-
-      block=driver.find_element(:id => value)
-      if block.attribute("class")=="unclicked"
-        unclicked_blocks.push(value)
-      end
-      if block.attribute("class")=="marked"
-        marked_blocks.push(value)
-      end
-    end
-    if (unclicked_blocks.length && marked_blocks.length == 1)
-      unclicked_blocks.each do |block_id|
-        click_block(block_id)
-      end
-    end
-  end
-
-  def click_around_two two
-    Log.debug "Clicking around twos"
-    unclicked_blocks=[]
-    marked_blocks=[]
-    surrounding_blocks=Coordinates.new(two).surrounding
-    surrounding_blocks.each_value do |value|
-      next if out_of_bounds value
-
-      block=driver.find_element(:id => value)
-      if block.attribute("class")=="unclicked"
-        unclicked_blocks.push(value)
-      end
-      if block.attribute("class")=="marked"
-        marked_blocks.push(value)
-      end
-    end
-    if (unclicked_blocks.length > 0 && marked_blocks.length == 2)
-      unclicked_blocks.each do |block_id|
-        click_block(block_id)
-      end
-    end
-  end
-
-  def click_around_three three
-    Log.debug "Clicking around threes"
-    unclicked_blocks=[]
-    marked_blocks=[]
-    surrounding_blocks=Coordinates.new(three).surrounding
-    surrounding_blocks.each_value do |value|
-      next if out_of_bounds value
-
-      block=driver.find_element(:id => value)
-      if block.attribute("class")=="unclicked"
-        unclicked_blocks.push(value)
-      end
-      if block.attribute("class")=="marked"
-        marked_blocks.push(value)
-      end
-    end
-    if (unclicked_blocks.length > 0 && marked_blocks.length == 3)
-      unclicked_blocks.each do |block_id|
-        click_block(block_id)
-      end
-    end
-  end
-
-  def click_around_four four
-    Log.debug "Clicking around fours"
-    unclicked_blocks=[]
-    marked_blocks=[]
-    surrounding_blocks=Coordinates.new(four).surrounding
-    surrounding_blocks.each_value do |value|
-      next if out_of_bounds value
-
-      block=driver.find_element(:id => value)
-      if block.attribute("class")=="unclicked"
-        unclicked_blocks.push(value)
-      end
-      if block.attribute("class")=="marked"
-        marked_blocks.push(value)
-      end
-    end
-    if (unclicked_blocks.length > 0 && marked_blocks.length == 4)
-      unclicked_blocks.each do |block_id|
-        click_block(block_id)
-      end
-    end
-  end
-
 
   def expand_around_marked
     Log.info "Total Marked: #{marked.length}"
+    @source=driver.page_source
     marked.each do |mark|
-      #Log.info "Inspecting Marked '#{mark.attribute("id")}'"
-      found_ones=[]
-      found_twos=[]
-      found_threes=[]
-      found_fours=[]
-      found_unclicked=[]
-      surrounding_blocks=Coordinates.new(mark.get_attribute("id")).surrounding
-      surrounding_blocks.each_value do |value|
-        next if all_clicked_around.include?(value)
-        next if out_of_bounds value
-        block=driver.find_element(:id => value)
-        if block.attribute("class")=="unclicked"
-          found_unclicked.push(value)
-        end
-        if block.attribute("class")=="mines1"
-          found_ones.push(value)
-        end
-        if block.attribute("class")=="mines2"
-          found_twos.push(value)
-        end
-        if block.attribute("class")=="mines3"
-          found_threes.push(value)
-        end
-        if block.attribute("class")=="mines4"
-          found_fours.push(value)
-        end
-      end
-      #don't check again if no sourrounding unclicked
+      value = mark.get_attribute("id")
+      found_unclicked=surrounding_type("unclicked", value)
       if found_unclicked.length == 0
         all_clicked_around.push("value")
       end
       #If found unclicked
       if found_unclicked.length > 0
-        found_ones.each do |one|
-          click_around_one one
+        surrounding_type("mines1", value).each do |one|
+          click_around one, "ones"
         end
-        found_twos.each do |two|
-          click_around_two two
+        surrounding_type("mines2", value).each do |two|
+          click_around two, "twos"
         end
-        found_threes.each do |three|
-          click_around_three three
+        surrounding_type("mines3", value).each do |three|
+          click_around three, "threes"
         end
-        found_fours.each do |four|
-          click_around_four four
+        surrounding_type("mines4", value).each do |four|
+          click_around four, "fours"
         end
+
       end
     end
     if (unclicked_blocks.length > 0 && status !="won" && status != "dead")
       @marked_inspections= marked.length
-      mark_ones
-      mark_twos
-      mark_threes
-      mark_fours
+      ["ones", "twos", "threes", "fours", "fives"].each do |type|
+        mark(type)
+      end
       Log.info "Marked #{marked.length - marked_inspections} this round"
       #should random click by a one
       random_click if marked.length == marked_inspections
