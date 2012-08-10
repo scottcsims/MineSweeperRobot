@@ -1,8 +1,8 @@
 require 'spec_helper'
 describe MineSweeper do
   before(:each) do
-    launch_web_driver "file://localhost/Users/ssims/RubymineProjects/minesweeper.github.com/index.html?preset=beginner"
-    @local_base="file://localhost/Users/ssims/RubymineProjects/minesweeper.github.com/index.html"
+    launch_web_driver "http://minesweeper.github.com/index.html?preset=beginner"
+    @local_base="http://minesweeper.github.com/"
     @test_url =@local_base+"?rows=3&cols=4&mines=[[0,0],[0,1],[0,2]]"
 
     #http://minesweeper.github.com/?rows=3&cols=4&mines=[[0,0],[0,1],[0,2]] intermediate
@@ -95,25 +95,19 @@ describe MineSweeper do
   it "should check alive" do
     mine_sweeper.check_alive
   end
-  it "should fail if not alive" do
+  xit "should fail if not alive" do
     mine_sweeper.should_receive(:status).and_return(nil)
     lambda { mine_sweeper.check_alive }.should(raise_exception("not alive"))
   end
   it "should win" do
     wins=0
     tries=0
-    while wins < 100
+    while wins < 1
       puts "Wins:#{wins} out of #{tries} tries"
       mine_sweeper.click_top_left_cell
       mine_sweeper.click_top_right_cell
       mine_sweeper.click_bottom_left_cell
       mine_sweeper.click_bottom_right_cell
-      #mine_sweeper.click_block "g1r8c14"
-      #if mine_sweeper.status == "alive"
-      #  4.times do
-      #    mine_sweeper.random_click
-      #  end
-      #end
       result = mine_sweeper.expand_around_marked
       if result == "won"
         wins =wins+1
